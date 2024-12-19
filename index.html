@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="uz">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -92,8 +92,7 @@
 <body>
     <div class="container">
         <!-- Logotipni joylashtirish -->
-       <img src="https://raw.githubusercontent.com/sultan-ata/Eltaxi/main/eltaksi.png" alt="ЭлТакси Logotipi" class="logo">
-
+        <img src="https://raw.githubusercontent.com/sultan-ata/Eltaxi/main/eltaksi.png" alt="ЭлТакси Logotipi" class="logo">
 
         <h3>Сабаблилар дафтари</h3>
 
@@ -155,64 +154,65 @@
                     status: "БАНД",
                     remainingTime: `${busyHours} соат 0 минут 0 секунд`
                 };
-                
+
                 drivers.push(driver);
                 localStorage.setItem("drivers", JSON.stringify(drivers));
-
                 addDriverToTable(driver);
                 startCountdown(drivers.length - 1);
             } else {
-                alert("Илтимос, барча майдонларни тўлдиринг.");
+                alert("Барча майдонларни тўлдиринг!");
             }
+
+            // Oynalar tozalanadi
+            document.getElementById("driver-name").value = "";
+            document.getElementById("plate-number").value = "";
+            document.getElementById("busy-hours").value = "";
         }
 
         function addDriverToTable(driver) {
-            const table = document.querySelector("#driver-table tbody");
-            const row = document.createElement("tr");
+            const tableBody = document.getElementById("driver-table").getElementsByTagName("tbody")[0];
+            const row = tableBody.insertRow();
+            const nameCell = row.insertCell(0);
+            const plateCell = row.insertCell(1);
+            const statusCell = row.insertCell(2);
+            const timeCell = row.insertCell(3);
 
-            row.innerHTML = `
-                <td>${driver.name}</td>
-                <td>${driver.plateNumber}</td>
-                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
-                <td>${driver.remainingTime}</td>
-            `;
-            table.appendChild(row);
+            nameCell.textContent = driver.name;
+            plateCell.textContent = driver.plateNumber;
+            statusCell.textContent = driver.status;
+            timeCell.textContent = driver.remainingTime;
         }
 
         function startCountdown(index) {
-            const interval = setInterval(() => {
-                const now = new Date().getTime();
-                const driver = drivers[index];
-                const remainingTime = driver.endTime - now;
+            const driver = drivers[index];
+            const remainingTimeCell = document.getElementById("driver-table").getElementsByTagName("tbody")[0].rows[index].cells[3];
 
-                if (remainingTime <= 0) {
-                    clearInterval(interval);
-                    driver.status = "Мавжуд";
-                    driver.remainingTime = "0 соат 0 минут 0 секунд";
-                    updateTable();
+            const countdown = setInterval(function () {
+                const currentTime = new Date().getTime();
+                const timeRemaining = driver.endTime - currentTime;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(countdown);
+                    remainingTimeCell.textContent = "Вақт тугади";
+                    drivers[index].status = "БОШҚА";
+                    drivers[index].remainingTime = "0 соат 0 минут 0 секунд";
+                    localStorage.setItem("drivers", JSON.stringify(drivers));
                 } else {
-                    const hours = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
-                    const minutes = Math.floor((remainingTime / (1000 * 60)) % 60);
-                    const seconds = Math.floor((remainingTime / 1000) % 60);
-                    driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
-                    updateTable();
+                    const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+                    remainingTimeCell.textContent = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    drivers[index].remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    localStorage.setItem("drivers", JSON.stringify(drivers));
                 }
             }, 1000);
         }
 
-        function updateTable() {
-            const table = document.querySelector("#driver-table tbody");
-            table.innerHTML = "";
-            drivers.forEach((driver, index) => {
-                addDriverToTable(driver);
-                startCountdown(index);
-            });
-        }
-
         function resetAll() {
             localStorage.removeItem("drivers");
+            document.getElementById("driver-table").getElementsByTagName("tbody")[0].innerHTML = "";
             drivers = [];
-            updateTable();
         }
     </script>
 </body>
