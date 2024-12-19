@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Taxi Management System</title>
+    <style>
+        body {
+            background-color: #f4f4f9;
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f9;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        h1 {
+            text-align: center;
+        }
+        h3 {
+            text-align: center;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+        }
+        .available {
+            background-color: #28a745;
+        }
+        .busy {
+            background-color: #dc3545;
+        }
+        .reset-button {
+            background-color: #dc3545;
+            margin-top: 20px;
+        }
+        .reset-button:hover {
+            background-color: #c82333;
+        }
+        /* Logotip uchun o'zgartirish */
+        .logo {
+            display: block;
+            margin: 0 auto;
+            width: 350px;  /* Logotip o'lchamini moslashtiring */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Logotipni joylashtirish -->
+       <img src="https://raw.githubusercontent.com/sultan-ata/Eltaxi/main/eltaksi.png" alt="ЭлТакси Logotipi" class="logo">
+
+
+        <h3>Сабаблилар дафтари</h3>
+
+        <div class="form-group">
+            <label for="driver-name">ИСМ ШАРИФИ:</label>
+            <input type="text" id="driver-name" placeholder="ИСМ ФАМИЛИЯСИ">
+        </div>
+
+        <div class="form-group">
+            <label for="plate-number">БОРТ РАҚАМИ:</label>
+            <input type="text" id="plate-number" placeholder="БОРТ НОМЕР">
+        </div>
+
+        <div class="form-group">
+            <label for="busy-hours">ВАҚТИ (СОАТ):</label>
+            <input type="number" id="busy-hours" placeholder="САБАБЛИ ВАҚТИ">
+        </div>
+
+        <button onclick="addDriver()">Қўшиш</button>
+        <button class="reset-button" onclick="resetAll()">SBROS QILISH</button>
+
+        <table id="driver-table">
+            <thead>
+                <tr>
+                    <th>ИСМ ШАРИФИ</th>
+                    <th>БОРТ РАҚАМИ</th>
+                    <th>ҲОЛАТИ</th>
+                    <th>ҚОЛГАН ВАҚТ</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Yozuvlar shu yerga qo'shiladi -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let drivers = JSON.parse(localStorage.getItem("drivers")) || [];
+
+        window.onload = function () {
+            // Yozuvlarni yuklash
+            drivers.forEach((driver, index) => {
+                addDriverToTable(driver);
+                startCountdown(index);
+            });
+        };
+
+        function addDriver() {
+            const driverName = document.getElementById("driver-name").value;
+            const plateNumber = document.getElementById("plate-number").value;
+            const busyHours = document.getElementById("busy-hours").value;
+
+            if (driverName && plateNumber && busyHours) {
+                const driver = {
+                    name: driverName,
+                    plateNumber: plateNumber,
+                    busyHours: busyHours,
+                    endTime: new Date().getTime() + (parseInt(busyHours) * 60 * 60 * 1000),
+                    status: "БАНД",
+                    remainingTime: `${busyHours} соат 0 минут 0 секунд`
+                };
+                
+                drivers.push(driver);
+                localStorage.setItem("drivers", JSON.stringify(drivers));
+
+                addDriverToTable(driver);
+                startCountdown(drivers.length - 1);
+            } else {
+                alert("Илтимос, барча майдонларни тўлдиринг.");
+            }
+        }
+
+        function addDriverToTable(driver) {
+            const table = document.querySelector("#driver-table tbody");
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td>${driver.name}</td>
+                <td>${driver.plateNumber}</td>
+                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
+                <td>${driver.remainingTime}</td>
+            `;
+            table.appendChild(row);
+        }
+
+        function startCountdown(index) {
+            const interval = setInterval(() => {
+                const now = new Date().getTime();
+                const driver = drivers[index];
+                const remainingTime = driver.endTime - now;
+
+                if (remainingTime <= 0) {
+                    clearInterval(interval);
+                    driver.status = "Мавжуд";
+                    driver.remainingTime = "0 соат 0 минут 0 секунд";
+                    updateTable();
+                } else {
+                    const hours = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((remainingTime / (1000 * 60)) % 60);
+                    const seconds = Math.floor((remainingTime / 1000) % 60);
+                    driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    updateTable();
+                }
+            }, 1000);
+        }
+
+        function updateTable() {
+            const table = document.querySelector("#driver-table tbody");
+            table.innerHTML = "";
+            drivers.forEach((driver, index) => {
+                addDriverToTable(driver);
+                startCountdown(index);
+            });
+        }
+
+        function resetAll() {
+            localStorage.removeItem("drivers");
+            drivers = [];
+            updateTable();
+        }
+    </script>
+</body>
+</html>
