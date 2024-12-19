@@ -98,14 +98,23 @@
             margin: 0 auto;
             width: 350px;  /* Logotip o'lchamini moslashtiring */
         }
+        /* Onlayn soat */
+        .clock {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Logotipni joylashtirish -->
-       <img src="https://raw.githubusercontent.com/sultan-ata/Eltaxi/main/eltaksi.png" alt="ЭлТакси Logotipi" class="logo">
+        <img src="https://raw.githubusercontent.com/sultan-ata/Eltaxi/main/eltaksi.png" alt="ЭлТакси Logotipi" class="logo">
+
         <!-- Onlayn soat -->
         <div class="clock" id="clock"></div>
+
         <h3>Сабаблилар дафтари</h3>
 
         <div class="form-group">
@@ -151,7 +160,18 @@
                 addDriverToTable(driver);
                 startCountdown(index);
             });
+            // Onlayn soatni yangilash
+            updateClock();
+            setInterval(updateClock, 1000); // Har 1 sekundda soatni yangilash
         };
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById("clock").innerHTML = `${hours}:${minutes}:${seconds}`;
+        }
 
         function addDriver() {
             const driverName = document.getElementById("driver-name").value;
@@ -167,79 +187,83 @@
                     status: "БАНД",
                     remainingTime: `${busyHours} соат 0 минут 0 секунд`
                 };
+
                 drivers.push(driver);
                 localStorage.setItem("drivers", JSON.stringify(drivers));
+
                 addDriverToTable(driver);
                 startCountdown(drivers.length - 1);
             }
         }
 
         function addDriverToTable(driver) {
-            const tableBody = document.querySelector("#driver-table tbody");
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${driver.name}</td>
-                <td>${driver.plateNumber}</td>
-                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
-                <td id="time-${drivers.indexOf(driver)}">${driver.remainingTime}</td>
-                <td><button class="remove-button" onclick="removeDriver(${drivers.indexOf(driver)})">ЎЧИРИШ</button></td>
-            `;
-            tableBody.appendChild(row);
+            const table = document.getElementById("driver-table").getElementsByTagName('tbody')[0];
+            const row = table.insertRow();
+            const nameCell = row.insertCell(0);
+            const plateCell = row.insertCell(1);
+            const statusCell = row.insertCell(2);
+            const timeCell = row.insertCell(3);
+            const actionCell = row.insertCell(4);
+
+            nameCell.textContent = driver.name;
+            plateCell.textContent = driver.plateNumber;
+            statusCell.textContent = driver.status;
+            timeCell.textContent = driver.remainingTime;
+
+            const removeButton = document.createElement("button");
+            removeButton.classList.add("remove-button");
+            removeButton.textContent = "ЎЧИРИШ";
+            removeButton.onclick = function() {
+                if (driver.status === "Бош") {
+                    removeDriver(row, driver);
+                }
+            };
+
+            actionCell.appendChild(removeButton);
         }
 
         function startCountdown(index) {
             const driver = drivers[index];
-            const timeElement = document.getElementById(`time-${index}`);
-
             const countdownInterval = setInterval(() => {
                 const remainingTime = driver.endTime - new Date().getTime();
-
                 if (remainingTime <= 0) {
-                    clearInterval(countdownInterval);
-                driver.status = "ОНЛАЙН";
-                    driver.remainingTime = "0 соат 0 минут 0 секунд";
+                    driver.status = "Бош";
+                    drivers[index] = driver;
                     localStorage.setItem("drivers", JSON.stringify(drivers));
-                    updateDriverStatus(index);
-                    timeElement.innerText = driver.remainingTime;
+                    updateDriverRow(index);
+                    clearInterval(countdownInterval);
                 } else {
                     const hours = Math.floor(remainingTime / (1000 * 60 * 60));
                     const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
                     const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
                     driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
-                    timeElement.innerText = driver.remainingTime;
+                    drivers[index] = driver;
+                    updateDriverRow(index);
                 }
             }, 1000);
         }
 
-        function updateDriverStatus(index) {
-            const row = document.querySelector(`#driver-table tbody tr:nth-child(${index + 1})`);
-            const statusCell = row.querySelector(".status");
+        function updateDriverRow(index) {
+            const table = document.getElementById("driver-table").getElementsByTagName('tbody')[0];
+            const row = table.rows[index];
+            const driver = drivers[index];
+            row.cells[2].textContent = driver.status;
+            row.cells[3].textContent = driver.remainingTime;
+        }
 
-    if (drivers[index].status === "ОНЛАЙН") {
-                statusCell.innerText = "ОНЛАЙН";
-                statusCell.classList.remove("busy");
-                statusCell.classList.add("available");
+        function removeDriver(row, driver) {
+            const index = drivers.indexOf(driver);
+            if (index !== -1) {
+                drivers.splice(index, 1);
+                localStorage.setItem("drivers", JSON.stringify(drivers));
+                row.remove();
             }
-        }
-
-        function removeDriver(index) {
-            drivers.splice(index, 1);
-            localStorage.setItem("drivers", JSON.stringify(drivers));
-            renderTable();
-        }
-
-        function renderTable() {
-            const tableBody = document.querySelector("#driver-table tbody");
-            tableBody.innerHTML = "";
-            drivers.forEach((driver, index) => {
-                addDriverToTable(driver);
-            });
         }
 
         function resetAll() {
             drivers = [];
             localStorage.setItem("drivers", JSON.stringify(drivers));
-            renderTable();
+            document.getElementById("driver-table").getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
 </body>
