@@ -185,7 +185,7 @@
             const row = document.createElement("tr");
 
             const statusClass = driver.status === "БАНД" ? "busy" : "available";
-            const statusText = driver.status === "БАНД" ? "БАНД" : "Бош";
+            const statusText = driver.status === "БАНД" ? "БАНД" : "Онлайн";
 
             row.innerHTML = `
                 <td>${driver.name}</td>
@@ -193,7 +193,7 @@
                 <td class="status ${statusClass}">${statusText}</td>
                 <td>${driver.remainingTime}</td>
                 <td>
-                    ${driver.status === "Бош" ? `<button onclick="removeDriver(${index})" class="remove-button">УЧИРИШ</button>` : ""}
+                    ${driver.status === "Онлайн" ? `<button onclick="removeDriver(${index})" class="remove-button">)ЎЧИРИШ</button>` : ""}
                 </td>
             `;
 
