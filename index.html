@@ -148,7 +148,7 @@
                     <th>БОРТ РАҚАМИ</th>
                     <th>ҲОЛАТИ</th>
                     <th>ҚОЛГАН ВАҚТ</th>
-                    <th>ЎЧИРИШ</th>
+                    <th>АМАЛ</th>
                 </tr>
             </thead>
             <tbody>
@@ -166,6 +166,7 @@
                 addDriverToTable(driver);
                 startCountdown(index);
             });
+            setInterval(updateClock, 1000);
         };
 
         function addDriver() {
@@ -174,12 +175,6 @@
             const busyHours = document.getElementById("busy-hours").value;
 
             if (driverName && plateNumber && busyHours) {
-                // Takrorlanmas bort raqamiga tekshirish
-                if (drivers.some(driver => driver.plateNumber === plateNumber)) {
-                    alert("Bunday bort raqami allaqachon mavjud!");
-                    return;
-                }
-
                 const driver = {
                     name: driverName,
                     plateNumber: plateNumber,
@@ -189,66 +184,78 @@
                     remainingTime: `${busyHours} соат 0 минут 0 секунд`
                 };
 
-                // Drayverni qo'shish
                 drivers.push(driver);
                 localStorage.setItem("drivers", JSON.stringify(drivers));
                 addDriverToTable(driver);
                 startCountdown(drivers.length - 1);
-            } else {
-                alert("Barcha maydonlarni to'ldiring!");
             }
         }
 
         function addDriverToTable(driver) {
-            const tableBody = document.querySelector("#driver-table tbody");
+            const table = document.getElementById("driver-table").getElementsByTagName("tbody")[0];
+            const row = table.insertRow();
+            const nameCell = row.insertCell(0);
+            const plateCell = row.insertCell(1);
+            const statusCell = row.insertCell(2);
+            const timeCell = row.insertCell(3);
+            const deleteCell = row.insertCell(4);
 
-            const row = document.createElement("tr");
+            nameCell.textContent = driver.name;
+            plateCell.textContent = driver.plateNumber;
+            statusCell.textContent = driver.status;
+            timeCell.textContent = driver.remainingTime;
 
-            row.innerHTML = `
-                <td>${driver.name}</td>
-                <td>${driver.plateNumber}</td>
-                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
-                <td class="remaining-time">${driver.remainingTime}</td>
-                <td><button onclick="deleteDriver(${drivers.length - 1})">ЎЧИРИШ</button></td>
-            `;
-
-            tableBody.appendChild(row);
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "ЎЧИРиш";
+            deleteButton.style.backgroundColor = "#dc3545";
+            deleteButton.style.color = "white";
+            deleteButton.style.border = "none";
+            deleteButton.style.borderRadius = "5px";
+            deleteButton.style.padding = "5px 10px";
+            deleteButton.onclick = function () {
+                deleteDriver(driver.plateNumber, row);
+            };
+            deleteCell.appendChild(deleteButton);
         }
 
-        function deleteDriver(index) {
-            drivers.splice(index, 1);
+        function deleteDriver(plateNumber, row) {
+            drivers = drivers.filter(driver => driver.plateNumber !== plateNumber);
             localStorage.setItem("drivers", JSON.stringify(drivers));
-            location.reload();  // Barcha yozuvlarni yangilash
+            row.remove();
         }
 
         function startCountdown(index) {
             const driver = drivers[index];
-            const remainingTimeCell = document.querySelector(`#driver-table tbody tr:nth-child(${index + 1}) .remaining-time`);
+            const countdownInterval = setInterval(() => {
+                const currentTime = new Date().getTime();
+                const remainingTime = driver.endTime - currentTime;
 
-            const interval = setInterval(() => {
-                const now = new Date().getTime();
-                const timeLeft = driver.endTime - now;
-
-                if (timeLeft <= 0) {
-                    clearInterval(interval);
-                    remainingTimeCell.textContent = "Вақт тугади";
-                    const statusCell = document.querySelector(`#driver-table tbody tr:nth-child(${index + 1}) .status`);
-                    statusCell.textContent = "БОШ";
-                    statusCell.classList.remove("busy");
-                    statusCell.classList.add("available");
+                if (remainingTime <= 0) {
+                    clearInterval(countdownInterval);
+                    document.querySelector(`#driver-table tbody tr:nth-child(${index + 1}) td:nth-child(3)`).textContent = "БОШ";
+                    document.querySelector(`#driver-table tbody tr:nth-child(${index + 1}) td:nth-child(3)`).style.backgroundColor = "#28a745";
                 } else {
-                    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-                    remainingTimeCell.textContent = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+                    const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+                    driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    document.querySelector(`#driver-table tbody tr:nth-child(${index + 1}) td:nth-child(4)`).textContent = driver.remainingTime;
                 }
             }, 1000);
         }
 
+        function updateClock() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            document.getElementById("clock").textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
         function resetAll() {
-            localStorage.removeItem("drivers");
             drivers = [];
-            location.reload();
+            localStorage.setItem("drivers", JSON.stringify(drivers));
+            document.getElementById("driver-table").getElementsByTagName("tbody")[0].innerHTML = "";
         }
     </script>
 </body>
