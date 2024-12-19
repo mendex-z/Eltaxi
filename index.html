@@ -135,7 +135,7 @@
         </div>
 
         <button onclick="addDriver()">Қўшиш</button>
-        <button class="reset-button" onclick="resetAll()">SBROS QILISH</button>
+        <button class="reset-button" onclick="resetAll()">ТОЗАЛАШ</button>
 
         <table id="driver-table">
             <thead>
@@ -228,7 +228,7 @@
             const remainingTime = driver.endTime - new Date().getTime();
 
             if (remainingTime <= 0) {
-                driver.status = "БОШ"
+                driver.status = "ОНЛАЙН"
                 driver.remainingTime = "0 соат 0 минут 0 секунд";
                 localStorage.setItem("drivers", JSON.stringify(drivers));
                 return;
@@ -246,10 +246,10 @@
 
                 if (timeLeft <= 0) {
                     clearInterval(interval);
-                    driver.status = "БОШ";
+                    driver.status = "ОНЛАЙН";
                     driver.remainingTime = "0 соат 0 минут 0 секунд";
                     localStorage.setItem("drivers", JSON.stringify(drivers));
-                    document.querySelectorAll("#driver-table tbody tr")[index].children[2].textContent = "БОШ";
+                    document.querySelectorAll("#driver-table tbody tr")[index].children[2].textContent = "ОНЛАЙН";
                 }
             }, 1000);
         }
