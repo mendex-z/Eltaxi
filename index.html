@@ -181,7 +181,7 @@
                 <td>${driver.plateNumber}</td>
                 <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
                 <td id="time-${drivers.indexOf(driver)}">${driver.remainingTime}</td>
-                <td><button class="remove-button" onclick="removeDriver(${drivers.indexOf(driver)})">УЧИРиш</button></td>
+                <td><button class="remove-button" onclick="removeDriver(${drivers.indexOf(driver)})">ЎЧИРИШ</button></td>
             `;
             tableBody.appendChild(row);
         }
@@ -195,7 +195,7 @@
 
                 if (remainingTime <= 0) {
                     clearInterval(countdownInterval);
-                    driver.status = "БОШ";
+                driver.status = "ОНЛАЙН";
                     driver.remainingTime = "0 соат 0 минут 0 секунд";
                     localStorage.setItem("drivers", JSON.stringify(drivers));
                     updateDriverStatus(index);
@@ -214,8 +214,8 @@
             const row = document.querySelector(`#driver-table tbody tr:nth-child(${index + 1})`);
             const statusCell = row.querySelector(".status");
 
-            if (drivers[index].status === "БОШ") {
-                statusCell.innerText = "БОШ";
+    if (drivers[index].status === "ОНЛАЙН") {
+                statusCell.innerText = "ОНЛАЙН";
                 statusCell.classList.remove("busy");
                 statusCell.classList.add("available");
             }
