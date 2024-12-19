@@ -216,12 +216,7 @@ if (drivers.some(driver => driver.plateNumber === plateNumber)) {
             saveDriversToStorage();
             renderTable();
 
-            // Clear the input fields
-            document.getElementById('driver-name').value = '';
-            document.getElementById('plate-number').value = '';
-            document.getElementById('busy-hours').value = '';
-        }
-
+        
         // Initial rendering of the table
         renderTable();
         function resetAll() {
