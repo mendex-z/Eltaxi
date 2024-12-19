@@ -208,7 +208,22 @@
                 startCountdown(index);
             });
         }
+if (drivers.some(driver => driver.plateNumber === plateNumber)) {
+    alert('Bu bort raqami allaqachon mavjud.');
+    return;
+}
+  // Save updated list to local storage and render the table
+            saveDriversToStorage();
+            renderTable();
 
+            // Clear the input fields
+            document.getElementById('driver-name').value = '';
+            document.getElementById('plate-number').value = '';
+            document.getElementById('busy-hours').value = '';
+        }
+
+        // Initial rendering of the table
+        renderTable();
         function resetAll() {
             localStorage.removeItem("drivers");
             drivers = [];
