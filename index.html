@@ -34,8 +34,6 @@
             background-color: #f4f4f9;
         }
         .form-group {
-            display: flex;
-            justify-content: space-between;
             margin-bottom: 15px;
         }
         label {
@@ -43,8 +41,8 @@
             margin-bottom: 5px;
         }
         input {
-            width: 48%;
-            padding: 8px;
+            width: 100%;
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
@@ -83,17 +81,6 @@
         .reset-button:hover {
             background-color: #c82333;
         }
-        .remove-button {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        .remove-button:hover {
-            background-color: #c82333;
-        }
         /* Logotip uchun o'zgartirish */
         .logo {
             display: block;
@@ -106,6 +93,16 @@
             font-weight: bold;
             text-align: center;
             margin-top: 10px;
+        }
+        /* Form elementlarini gorizontal qilib joylashtirish */
+        .form-group {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .form-group label,
+        .form-group input {
+            width: 48%;
         }
     </style>
 </head>
@@ -144,7 +141,7 @@
                     <th>БОРТ РАҚАМИ</th>
                     <th>ҲОЛАТИ</th>
                     <th>ҚОЛГАН ВАҚТ</th>
-                    <th>ФАОЛИЯТ</th>
+                    <th>ИЧИДАН О'CHIRISH</th>
                 </tr>
             </thead>
             <tbody>
@@ -162,6 +159,7 @@
                 addDriverToTable(driver);
                 startCountdown(index);
             });
+            updateClock();
         };
 
         function addDriver() {
@@ -170,6 +168,12 @@
             const busyHours = document.getElementById("busy-hours").value;
 
             if (driverName && plateNumber && busyHours) {
+                // Bort raqami takrorlanmasligi uchun tekshirish
+                if (drivers.some(driver => driver.plateNumber === plateNumber)) {
+                    alert("Bu bort raqami allaqachon qo'shilgan!");
+                    return;
+                }
+
                 const driver = {
                     name: driverName,
                     plateNumber: plateNumber,
@@ -179,54 +183,60 @@
                     remainingTime: `${busyHours} соат 0 минут 0 секунд`
                 };
 
-                // Yangi haydovchini qo'shish
                 drivers.push(driver);
                 localStorage.setItem("drivers", JSON.stringify(drivers));
-
-                // Haydovchini jadvalga qo'shish
                 addDriverToTable(driver);
                 startCountdown(drivers.length - 1);
-
-                // Formani tozalash
-                document.getElementById("driver-name").value = "";
-                document.getElementById("plate-number").value = "";
-                document.getElementById("busy-hours").value = "";
             }
         }
 
         function addDriverToTable(driver) {
-            const table = document.getElementById("driver-table").getElementsByTagName('tbody')[0];
-            const row = table.insertRow();
+            const tableBody = document.getElementById("driver-table").getElementsByTagName('tbody')[0];
+            const row = tableBody.insertRow();
+            const nameCell = row.insertCell(0);
+            const plateCell = row.insertCell(1);
+            const statusCell = row.insertCell(2);
+            const timeCell = row.insertCell(3);
+            const removeCell = row.insertCell(4);
 
-            row.insertCell(0).innerHTML = driver.name;
-            row.insertCell(1).innerHTML = driver.plateNumber;
-            row.insertCell(2).innerHTML = `<span class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</span>`;
-            row.insertCell(3).innerHTML = driver.remainingTime;
-            const removeButton = row.insertCell(4);
-            removeButton.innerHTML = `<button class="remove-button" onclick="removeDriver(${drivers.indexOf(driver)})">Учириш</button>`;
+            nameCell.innerText = driver.name;
+            plateCell.innerText = driver.plateNumber;
+            statusCell.innerText = driver.status;
+            timeCell.innerText = driver.remainingTime;
+            removeCell.innerHTML = `<button onclick="removeDriver(${drivers.indexOf(driver)})">УЧИРИШ</button>`;
+
+            if (driver.status === "БАНД") {
+                statusCell.style.backgroundColor = "#dc3545";
+            } else {
+                statusCell.style.backgroundColor = "#28a745";
+            }
         }
 
         function startCountdown(index) {
             const driver = drivers[index];
+            const statusCell = document.getElementById("driver-table").rows[index + 1].cells[2];
+            const timeCell = document.getElementById("driver-table").rows[index + 1].cells[3];
+
             const countdown = setInterval(function () {
                 const remainingTime = driver.endTime - new Date().getTime();
                 if (remainingTime <= 0) {
                     clearInterval(countdown);
                     driver.status = "БОШ";
-                    driver.remainingTime = "0 соат 0 минут 0 секунд";
-                    drivers[index] = driver;
-                    localStorage.setItem("drivers", JSON.stringify(drivers));
-                    document.getElementById("driver-table").rows[index + 1].cells[2].innerHTML = `<span class="status available">БОШ</span>`;
-                    document.getElementById("driver-table").rows[index + 1].cells[3].innerHTML = driver.remainingTime;
+                    statusCell.innerText = "БОШ";
+                    statusCell.style.backgroundColor = "#28a745";
                 } else {
                     const hours = Math.floor(remainingTime / (1000 * 60 * 60));
                     const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
                     const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
-                    driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
-                    drivers[index] = driver;
-                    document.getElementById("driver-table").rows[index + 1].cells[3].innerHTML = driver.remainingTime;
+                    timeCell.innerText = `${hours} соат ${minutes} минут ${seconds} секунд`;
                 }
             }, 1000);
+        }
+
+        function resetAll() {
+            localStorage.removeItem("drivers");
+            drivers = [];
+            document.getElementById("driver-table").getElementsByTagName('tbody')[0].innerHTML = "";
         }
 
         function removeDriver(index) {
@@ -235,11 +245,16 @@
             document.getElementById("driver-table").deleteRow(index + 1);
         }
 
-        function resetAll() {
-            drivers = [];
-            localStorage.setItem("drivers", JSON.stringify(drivers));
-            const table = document.getElementById("driver-table").getElementsByTagName('tbody')[0];
-            table.innerHTML = ""; // Barcha yozuvlarni o'chirish
+        // Onlayn soat yangilanishi
+        function updateClock() {
+            const clockElement = document.getElementById("clock");
+            setInterval(function () {
+                const now = new Date();
+                const hours = now.getHours().toString().padStart(2, '0');
+                const minutes = now.getMinutes().toString().padStart(2, '0');
+                const seconds = now.getSeconds().toString().padStart(2, '0');
+                clockElement.innerText = `${hours}:${minutes}:${seconds}`;
+            }, 1000);
         }
     </script>
 </body>
