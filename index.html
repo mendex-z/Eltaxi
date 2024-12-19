@@ -88,7 +88,6 @@
 </head>
 <body>
     <div class="container">
-        <!-- Logotipni joylashtirish -->
         <img src="https://raw.githubusercontent.com/sultan-ata/Eltaxi/main/eltaksi.png" alt="ЭлТакси Logotipi" class="logo">
 
         <h3>Сабаблилар дафтари</h3>
@@ -142,61 +141,110 @@
             const plateNumber = document.getElementById("plate-number").value;
             const busyHours = document.getElementById("busy-hours").value;
 
-            if (driverName && plateNumber && busyHours) {
-                const driver = {
-                    name: driverName,
-                    plateNumber: plateNumber,
-                    busyHours: busyHours,
-                    endTime: new Date().getTime() + (parseInt(busyHours) * 60 * 60 * 1000),
-                    status: "БАНД",
-                    remainingTime: `${busyHours} соат 0 минут 0 секунд`
-                };
-
-                drivers.push(driver);
-                localStorage.setItem("drivers", JSON.stringify(drivers));
-                addDriverToTable(driver);
-                startCountdown(drivers.length - 1);
+            if (!driverName || !plateNumber || !busyHours) {
+                alert("Iltimos, barcha maydonlarni to'ldiring.");
+                return;
             }
+
+            // Bort raqamini tekshirish
+            const isPlateNumberExist = drivers.some(driver => driver.plateNumber === plateNumber);
+            if (isPlateNumberExist) {
+                alert("Bu bort raqami allaqachon mavjud.");
+                return;
+            }
+
+            // Yangi haydovchini qo'shish
+            const driver = {
+                name: driverName,
+                plateNumber: plateNumber,
+                busyHours: busyHours,
+                endTime: new Date().getTime() + (parseInt(busyHours) * 60 * 60 * 1000),
+                status: "БАНД",
+                remainingTime: `${busyHours} соат 0 минут 0 секунд`
+            };
+
+            drivers.push(driver);
+            localStorage.setItem("drivers", JSON.stringify(drivers));
+            addDriverToTable(driver);
+            startCountdown(drivers.length - 1);
         }
 
         function addDriverToTable(driver) {
-            const tableBody = document.getElementById("driver-table").getElementsByTagName("tbody")[0];
-            const row = tableBody.insertRow();
-            row.innerHTML = `
-                <td>${driver.name}</td>
-                <td>${driver.plateNumber}</td>
-                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
-                <td class="remaining-time">${driver.remainingTime}</td>
-            `;
+            const tableBody = document.querySelector("#driver-table tbody");
+            const row = document.createElement("tr");
+
+            const nameCell = document.createElement("td");
+            nameCell.textContent = driver.name;
+            row.appendChild(nameCell);
+
+            const plateNumberCell = document.createElement("td");
+            plateNumberCell.textContent = driver.plateNumber;
+            row.appendChild(plateNumberCell);
+
+            const statusCell = document.createElement("td");
+            const statusText = driver.status;
+            const statusClass = statusText === "БАНД" ? "busy" : "available";
+            statusCell.textContent = statusText;
+            statusCell.classList.add("status", statusClass);
+            row.appendChild(statusCell);
+
+            const timeCell = document.createElement("td");
+            timeCell.textContent = driver.remainingTime;
+            row.appendChild(timeCell);
+
+            tableBody.appendChild(row);
         }
 
         function startCountdown(index) {
             const driver = drivers[index];
-            const statusCell = document.getElementsByClassName("status")[index];
-            const timeCell = document.getElementsByClassName("remaining-time")[index];
+            const endTime = driver.endTime;
 
-            const interval = setInterval(() => {
-                const remaining = driver.endTime - new Date().getTime();
-                if (remaining <= 0) {
-                    driver.status = "БОШ";
-                    statusCell.textContent = "БОШ";
-                    statusCell.classList.remove("busy");
-                    statusCell.classList.add("available");
-                    timeCell.textContent = "0 соат 0 минут 0 секунд";
-                    clearInterval(interval);
+            const countdownInterval = setInterval(() => {
+                const currentTime = new Date().getTime();
+                const timeRemaining = endTime - currentTime;
+
+                if (timeRemaining <= 0) {
+                    clearInterval(countdownInterval);
+                    driver.status = "БОШ"; // Yashil bo'lishi kerak
+                    driver.remainingTime = "0 соат 0 минут 0 секунд";
+                    drivers[index] = driver;
+                    localStorage.setItem("drivers", JSON.stringify(drivers));
+                    updateTable();
                 } else {
-                    const hours = Math.floor(remaining / (1000 * 60 * 60));
-                    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
-                    timeCell.textContent = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    const hours = Math.floor(timeRemaining / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
+
+                    driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    drivers[index] = driver;
+                    localStorage.setItem("drivers", JSON.stringify(drivers));
+                    updateTable();
                 }
             }, 1000);
         }
 
+        function updateTable() {
+            const tableBody = document.querySelector("#driver-table tbody");
+            tableBody.innerHTML = ""; // Jadvallarni yangilash
+
+            drivers.forEach((driver, index) => {
+                addDriverToTable(driver);
+                if (driver.status === "БАНД") {
+                    const statusCell = tableBody.querySelectorAll("tr")[index].querySelector("td.status");
+                    statusCell.classList.remove("available");
+                    statusCell.classList.add("busy");
+                } else {
+                    const statusCell = tableBody.querySelectorAll("tr")[index].querySelector("td.status");
+                    statusCell.classList.remove("busy");
+                    statusCell.classList.add("available");
+                }
+            });
+        }
+
         function resetAll() {
+            localStorage.removeItem("drivers");
             drivers = [];
-            localStorage.setItem("drivers", JSON.stringify(drivers));
-            document.getElementById("driver-table").getElementsByTagName("tbody")[0].innerHTML = "";
+            updateTable();
         }
     </script>
 </body>
