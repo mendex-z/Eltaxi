@@ -147,7 +147,7 @@
         window.onload = function () {
             // Yozuvlarni yuklash
             drivers.forEach((driver, index) => {
-                addDriverToTable(driver, index);
+                addDriverToTable(driver);
                 startCountdown(index);
             });
         };
@@ -156,12 +156,6 @@
             const driverName = document.getElementById("driver-name").value;
             const plateNumber = document.getElementById("plate-number").value;
             const busyHours = document.getElementById("busy-hours").value;
-
-            // Bortni takrorlanmasligini tekshirish
-            if (drivers.some(driver => driver.plateNumber === plateNumber)) {
-                alert("Bu bort raqami allaqachon qo'shilgan!");
-                return;
-            }
 
             if (driverName && plateNumber && busyHours) {
                 const driver = {
@@ -172,78 +166,79 @@
                     status: "БАНД",
                     remainingTime: `${busyHours} соат 0 минут 0 секунд`
                 };
-
                 drivers.push(driver);
                 localStorage.setItem("drivers", JSON.stringify(drivers));
-
-                addDriverToTable(driver, drivers.length - 1);
+                addDriverToTable(driver);
                 startCountdown(drivers.length - 1);
             }
         }
 
-        function addDriverToTable(driver, index) {
+        function addDriverToTable(driver) {
+            const tableBody = document.querySelector("#driver-table tbody");
             const row = document.createElement("tr");
-
-            const statusClass = driver.status === "БАНД" ? "busy" : "available";
-            const statusText = driver.status === "БАНД" ? "БАНД" : "Онлайн";
-
             row.innerHTML = `
                 <td>${driver.name}</td>
                 <td>${driver.plateNumber}</td>
-                <td class="status ${statusClass}">${statusText}</td>
-                <td>${driver.remainingTime}</td>
-                <td>
-                    ${driver.status === "Онлайн" ? `<button onclick="removeDriver(${index})" class="remove-button">)ЎЧИРИШ</button>` : ""}
-                </td>
+                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
+                <td id="time-${drivers.indexOf(driver)}">${driver.remainingTime}</td>
+                <td><button class="remove-button" onclick="removeDriver(${drivers.indexOf(driver)})">УЧИРиш</button></td>
             `;
+            tableBody.appendChild(row);
+        }
 
-            document.querySelector("#driver-table tbody").appendChild(row);
+        function startCountdown(index) {
+            const driver = drivers[index];
+            const timeElement = document.getElementById(`time-${index}`);
+
+            const countdownInterval = setInterval(() => {
+                const remainingTime = driver.endTime - new Date().getTime();
+
+                if (remainingTime <= 0) {
+                    clearInterval(countdownInterval);
+                    driver.status = "БОШ";
+                    driver.remainingTime = "0 соат 0 минут 0 секунд";
+                    localStorage.setItem("drivers", JSON.stringify(drivers));
+                    updateDriverStatus(index);
+                    timeElement.innerText = driver.remainingTime;
+                } else {
+                    const hours = Math.floor(remainingTime / (1000 * 60 * 60));
+                    const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
+                    driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    timeElement.innerText = driver.remainingTime;
+                }
+            }, 1000);
+        }
+
+        function updateDriverStatus(index) {
+            const row = document.querySelector(`#driver-table tbody tr:nth-child(${index + 1})`);
+            const statusCell = row.querySelector(".status");
+
+            if (drivers[index].status === "БОШ") {
+                statusCell.innerText = "БОШ";
+                statusCell.classList.remove("busy");
+                statusCell.classList.add("available");
+            }
         }
 
         function removeDriver(index) {
             drivers.splice(index, 1);
             localStorage.setItem("drivers", JSON.stringify(drivers));
-            renderDrivers();
+            renderTable();
         }
 
-        function renderDrivers() {
+        function renderTable() {
             const tableBody = document.querySelector("#driver-table tbody");
-            tableBody.innerHTML = "";  // Yangi ma'lumotlar uchun eskilarni tozalash
-
+            tableBody.innerHTML = "";
             drivers.forEach((driver, index) => {
-                addDriverToTable(driver, index);
+                addDriverToTable(driver);
             });
-        }
-
-        function startCountdown(index) {
-            const driver = drivers[index];
-
-            const interval = setInterval(() => {
-                const now = new Date().getTime();
-                const remainingTime = driver.endTime - now;
-
-                if (remainingTime <= 0) {
-                    clearInterval(interval);
-                    driver.status = "Бош";  // Vaqt tugaganida statusni o'zgartirish
-                    driver.remainingTime = "0 соат 0 минут 0 секунд";
-                    localStorage.setItem("drivers", JSON.stringify(drivers));
-                    renderDrivers();
-                } else {
-                    const hours = Math.floor(remainingTime / (1000 * 60 * 60));
-                    const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
-
-                    driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
-                    localStorage.setItem("drivers", JSON.stringify(drivers));
-                    renderDrivers();
-                }
-            }, 1000);
         }
 
         function resetAll() {
             drivers = [];
             localStorage.setItem("drivers", JSON.stringify(drivers));
-            renderDrivers();
+            renderTable();
         }
     </script>
 </body>
