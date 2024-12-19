@@ -57,9 +57,6 @@
         button:hover {
             background-color: #218838;
         }
-        h1 {
-            text-align: center;
-        }
         h3 {
             text-align: center;
         }
@@ -69,10 +66,10 @@
             color: white;
         }
         .available {
-            background-color: #28a745;
+            background-color: #28a745; /* Yashil rang, bo'sh */
         }
         .busy {
-            background-color: #dc3545;
+            background-color: #dc3545; /* Qizil rang, band */
         }
         .reset-button {
             background-color: #dc3545;
@@ -159,60 +156,47 @@
                 localStorage.setItem("drivers", JSON.stringify(drivers));
                 addDriverToTable(driver);
                 startCountdown(drivers.length - 1);
-            } else {
-                alert("Барча майдонларни тўлдиринг!");
             }
-
-            // Oynalar tozalanadi
-            document.getElementById("driver-name").value = "";
-            document.getElementById("plate-number").value = "";
-            document.getElementById("busy-hours").value = "";
         }
 
         function addDriverToTable(driver) {
             const tableBody = document.getElementById("driver-table").getElementsByTagName("tbody")[0];
             const row = tableBody.insertRow();
-            const nameCell = row.insertCell(0);
-            const plateCell = row.insertCell(1);
-            const statusCell = row.insertCell(2);
-            const timeCell = row.insertCell(3);
-
-            nameCell.textContent = driver.name;
-            plateCell.textContent = driver.plateNumber;
-            statusCell.textContent = driver.status;
-            timeCell.textContent = driver.remainingTime;
+            row.innerHTML = `
+                <td>${driver.name}</td>
+                <td>${driver.plateNumber}</td>
+                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
+                <td class="remaining-time">${driver.remainingTime}</td>
+            `;
         }
 
         function startCountdown(index) {
             const driver = drivers[index];
-            const remainingTimeCell = document.getElementById("driver-table").getElementsByTagName("tbody")[0].rows[index].cells[3];
+            const statusCell = document.getElementsByClassName("status")[index];
+            const timeCell = document.getElementsByClassName("remaining-time")[index];
 
-            const countdown = setInterval(function () {
-                const currentTime = new Date().getTime();
-                const timeRemaining = driver.endTime - currentTime;
-
-                if (timeRemaining <= 0) {
-                    clearInterval(countdown);
-                    remainingTimeCell.textContent = "Вақт тугади";
-                    drivers[index].status = "БОШҚА";
-                    drivers[index].remainingTime = "0 соат 0 минут 0 секунд";
-                    localStorage.setItem("drivers", JSON.stringify(drivers));
+            const interval = setInterval(() => {
+                const remaining = driver.endTime - new Date().getTime();
+                if (remaining <= 0) {
+                    driver.status = "БОШ";
+                    statusCell.textContent = "БОШ";
+                    statusCell.classList.remove("busy");
+                    statusCell.classList.add("available");
+                    timeCell.textContent = "0 соат 0 минут 0 секунд";
+                    clearInterval(interval);
                 } else {
-                    const hours = Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                    const minutes = Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                    const seconds = Math.floor((timeRemaining % (1000 * 60)) / 1000);
-
-                    remainingTimeCell.textContent = `${hours} соат ${minutes} минут ${seconds} секунд`;
-                    drivers[index].remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
-                    localStorage.setItem("drivers", JSON.stringify(drivers));
+                    const hours = Math.floor(remaining / (1000 * 60 * 60));
+                    const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
+                    timeCell.textContent = `${hours} соат ${minutes} минут ${seconds} секунд`;
                 }
             }, 1000);
         }
 
         function resetAll() {
-            localStorage.removeItem("drivers");
-            document.getElementById("driver-table").getElementsByTagName("tbody")[0].innerHTML = "";
             drivers = [];
+            localStorage.setItem("drivers", JSON.stringify(drivers));
+            document.getElementById("driver-table").getElementsByTagName("tbody")[0].innerHTML = "";
         }
     </script>
 </body>
