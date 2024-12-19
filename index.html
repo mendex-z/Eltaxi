@@ -7,7 +7,7 @@
     <style>
         body {
             background-color: rgba(0, 0, 0, 0.1);
-            font-family: Arial, sans-serif;   
+            font-family: Arial, sans-serif;
             margin: 20px;
             background-color: #f4f4f9;
         }
@@ -75,7 +75,6 @@
         h1 {
             text-align: center;
         }
-
         h3 {
             text-align: center;
         }
@@ -118,16 +117,19 @@
     </div>
 
     <script>
+        // Retrieve drivers from local storage or initialize empty array
         const drivers = JSON.parse(localStorage.getItem('drivers')) || [];
         const table = document.getElementById('driver-table');
 
+        // Save drivers to local storage
         function saveDriversToStorage() {
             localStorage.setItem('drivers', JSON.stringify(drivers));
         }
 
+        // Render the table with drivers' data
         function renderTable() {
             table.innerHTML = '';
-            drivers.forEach((driver, index) => {
+            drivers.forEach((driver) => {
                 const now = new Date();
                 const busyUntil = new Date(driver.timestamp);
                 busyUntil.setHours(busyUntil.getHours() + parseInt(driver.busyHours));
@@ -137,7 +139,7 @@
                 const row = `<tr>
                     <td>${driver.name}</td>
                     <td>${driver.plateNumber}</td>
-                    <td>${driver.busyHours}</td>
+                    <td>${driver.busyHours} соат</td>
                     <td>
                         <button class="status-button ${isExpired ? 'available' : 'busy'}">
                             ${isExpired ? 'ИШДА' : 'БАНД'}
@@ -148,17 +150,24 @@
             });
         }
 
+        // Add a new driver
         function addDriver() {
             const name = document.getElementById('driver-name').value.trim();
             const plateNumber = document.getElementById('plate-number').value.trim();
             const busyHours = document.getElementById('busy-hours').value.trim();
 
             if (!name || !plateNumber || !busyHours) {
-                alert('Please fill in all fields.');
+                alert('Iltimos, barcha maydonlarni to\'ldiring.');
                 return;
             }
 
-            // Yangi haydovchini qo'shish
+            // Check if the plate number already exists
+            if (drivers.some(driver => driver.plateNumber === plateNumber)) {
+                alert('Bu bort raqami allaqachon mavjud.');
+                return;
+            }
+
+            // Add driver to the drivers array
             drivers.push({
                 name: name,
                 plateNumber: plateNumber,
@@ -166,19 +175,18 @@
                 timestamp: new Date().toISOString(),
             });
 
-            // Yangi haydovchilarni saqlash
+            // Save updated list to local storage and render the table
             saveDriversToStorage();
-
-            // Jadvalni yangilash
             renderTable();
 
-            // Yozish maydonlarini tozalash
+            // Clear the input fields
             document.getElementById('driver-name').value = '';
             document.getElementById('plate-number').value = '';
             document.getElementById('busy-hours').value = '';
         }
 
-        renderTable(); // Sayt yuklanganda jadvalni chiqarish
+        // Initial rendering of the table
+        renderTable();
     </script>
 </body>
 </html>
