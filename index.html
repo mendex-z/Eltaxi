@@ -34,18 +34,15 @@
             background-color: #f4f4f9;
         }
         .form-group {
-            display: flex;
-            justify-content: space-between;
             margin-bottom: 15px;
-            margin-left: 50px;
         }
         label {
             display: block;
             margin-bottom: 5px;
         }
         input {
-            width: 48%;
-            padding: 8px;
+            width: 100%;
+            padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
@@ -163,7 +160,18 @@
                 addDriverToTable(driver);
                 startCountdown(index);
             });
+            // Onlayn soatni yangilash
+            updateClock();
+            setInterval(updateClock, 1000); // Har 1 sekundda soatni yangilash
         };
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById("clock").innerHTML = `${hours}:${minutes}:${seconds}`;
+        }
 
         function addDriver() {
             const driverName = document.getElementById("driver-name").value;
@@ -180,67 +188,82 @@
                     remainingTime: `${busyHours} соат 0 минут 0 секунд`
                 };
 
-                // Yangi haydovchini qo'shish
                 drivers.push(driver);
                 localStorage.setItem("drivers", JSON.stringify(drivers));
 
-                // Haydovchini jadvalga qo'shish
                 addDriverToTable(driver);
                 startCountdown(drivers.length - 1);
-
-                // Formani tozalash
-                document.getElementById("driver-name").value = "";
-                document.getElementById("plate-number").value = "";
-                document.getElementById("busy-hours").value = "";
             }
         }
 
         function addDriverToTable(driver) {
             const table = document.getElementById("driver-table").getElementsByTagName('tbody')[0];
             const row = table.insertRow();
+            const nameCell = row.insertCell(0);
+            const plateCell = row.insertCell(1);
+            const statusCell = row.insertCell(2);
+            const timeCell = row.insertCell(3);
+            const actionCell = row.insertCell(4);
 
-            row.insertCell(0).innerHTML = driver.name;
-            row.insertCell(1).innerHTML = driver.plateNumber;
-            row.insertCell(2).innerHTML = `<span class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</span>`;
-            row.insertCell(3).innerHTML = driver.remainingTime;
-            const removeButton = row.insertCell(4);
-            removeButton.innerHTML = `<button class="remove-button" onclick="removeDriver(${drivers.indexOf(driver)})">Учириш</button>`;
+            nameCell.textContent = driver.name;
+            plateCell.textContent = driver.plateNumber;
+            statusCell.textContent = driver.status;
+            timeCell.textContent = driver.remainingTime;
+
+            const removeButton = document.createElement("button");
+            removeButton.classList.add("remove-button");
+            removeButton.textContent = "ЎЧИРИШ";
+            removeButton.onclick = function() {
+                if (driver.status === "Бош") {
+                    removeDriver(row, driver);
+                }
+            };
+
+            actionCell.appendChild(removeButton);
         }
 
         function startCountdown(index) {
             const driver = drivers[index];
-            const countdown = setInterval(function () {
+            const countdownInterval = setInterval(() => {
                 const remainingTime = driver.endTime - new Date().getTime();
                 if (remainingTime <= 0) {
-                    clearInterval(countdown);
-                    driver.status = "БОШ";
-                    driver.remainingTime = "0 соат 0 минут 0 секунд";
+                    driver.status = "Бош";
                     drivers[index] = driver;
                     localStorage.setItem("drivers", JSON.stringify(drivers));
-                    document.getElementById("driver-table").rows[index + 1].cells[2].innerHTML = `<span class="status available">БОШ</span>`;
-                    document.getElementById("driver-table").rows[index + 1].cells[3].innerHTML = driver.remainingTime;
+                    updateDriverRow(index);
+                    clearInterval(countdownInterval);
                 } else {
                     const hours = Math.floor(remainingTime / (1000 * 60 * 60));
                     const minutes = Math.floor((remainingTime % (1000 * 60 * 60)) / (1000 * 60));
                     const seconds = Math.floor((remainingTime % (1000 * 60)) / 1000);
                     driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
                     drivers[index] = driver;
-                    document.getElementById("driver-table").rows[index + 1].cells[3].innerHTML = driver.remainingTime;
+                    updateDriverRow(index);
                 }
             }, 1000);
         }
 
-        function removeDriver(index) {
-            drivers.splice(index, 1);
-            localStorage.setItem("drivers", JSON.stringify(drivers));
-            document.getElementById("driver-table").deleteRow(index + 1);
+        function updateDriverRow(index) {
+            const table = document.getElementById("driver-table").getElementsByTagName('tbody')[0];
+            const row = table.rows[index];
+            const driver = drivers[index];
+            row.cells[2].textContent = driver.status;
+            row.cells[3].textContent = driver.remainingTime;
+        }
+
+        function removeDriver(row, driver) {
+            const index = drivers.indexOf(driver);
+            if (index !== -1) {
+                drivers.splice(index, 1);
+                localStorage.setItem("drivers", JSON.stringify(drivers));
+                row.remove();
+            }
         }
 
         function resetAll() {
             drivers = [];
             localStorage.setItem("drivers", JSON.stringify(drivers));
-            const table = document.getElementById("driver-table").getElementsByTagName('tbody')[0];
-            table.innerHTML = ""; // Barcha yozuvlarni o'chirish
+            document.getElementById("driver-table").getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
 </body>
