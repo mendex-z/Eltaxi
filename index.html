@@ -113,6 +113,7 @@
         </div>
 
         <button onclick="addDriver()">Юкла</button>
+        <button onclick="clearInputs()">Сброс</button> <!-- Sbros tugmasi -->
 
         <table>
             <thead>
@@ -150,7 +151,7 @@
                 const row = `<tr>
                     <td>${driver.name}</td>
                     <td>${driver.plateNumber}</td>
-                    <td>${driver.busyHours}</td>
+                    <td>${driver.busyHours} soat</td>
                     <td>
                         <button class="status-button ${isExpired ? 'available' : 'busy'}">
                             ${isExpired ? 'ИШДА' : 'БАНД'}
@@ -161,36 +162,49 @@
             });
         }
 
-        // Driver qo'shish
+        // Haydovchini qo'shish
         function addDriver() {
             const name = document.getElementById('driver-name').value.trim();
             const plateNumber = document.getElementById('plate-number').value.trim();
             const busyHours = document.getElementById('busy-hours').value.trim();
 
             if (!name || !plateNumber || !busyHours) {
-                alert('Iltimos, barcha maydonlarni to\'ldiring!');
+                alert('Iltimos, barcha maydonlarni to\'ldiring.');
                 return;
             }
 
-            // Plate number takrorlanmasligini tekshirish
-            if (drivers.some(driver => driver.plateNumber === plateNumber)) {
-                alert('Bu bort raqami allaqachon mavjud!');
+            // Bort raqami takrorlanishini oldini olish
+            if (drivers.find(driver => driver.plateNumber === plateNumber)) {
+                alert('Bu bort raqami allaqachon ro\'yxatga olingan.');
                 return;
             }
 
-            const timestamp = new Date().toISOString();
+            const driver = {
+                name: name,
+                plateNumber: plateNumber,
+                busyHours: busyHours,
+                timestamp: new Date().toISOString() // Vaqtni saqlash
+            };
 
-            drivers.push({ name, plateNumber, busyHours, timestamp });
+            drivers.push(driver);
             saveDriversToStorage();
             renderTable();
 
-            // Inputlarni tozalash
+            // Input maydonlarni tozalash
             document.getElementById('driver-name').value = '';
             document.getElementById('plate-number').value = '';
             document.getElementById('busy-hours').value = '';
         }
 
-        renderTable(); // Sahifa yuklanganda mavjud haydovchilarni chiqarish
+        // Input maydonlarini tozalash (Sbros)
+        function clearInputs() {
+            document.getElementById('driver-name').value = '';
+            document.getElementById('plate-number').value = '';
+            document.getElementById('busy-hours').value = '';
+        }
+
+        // Sahifa yuklanganda ma'lumotni ko'rsatish
+        window.onload = renderTable;
     </script>
 </body>
 </html>
