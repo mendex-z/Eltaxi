@@ -107,6 +107,10 @@
         .form-group input {
             width: 48%;
         }
+        /* Bort raqamlarini pastga joylashtirish */
+        td {
+            vertical-align: bottom;
+        }
     </style>
 </head>
 <body>
@@ -144,7 +148,6 @@
                     <th>БОРТ РАҚАМИ</th>
                     <th>ҲОЛАТИ</th>
                     <th>ҚОЛГАН ВАҚТ</th>
-                    <th>ИШЛАТИШ</th>
                     <th>ЎЧИРИШ</th>
                 </tr>
             </thead>
@@ -163,19 +166,7 @@
                 addDriverToTable(driver);
                 startCountdown(index);
             });
-
-            // Soatni yangilash
-            updateClock();
         };
-
-        function updateClock() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            document.getElementById("clock").textContent = `${hours}:${minutes}:${seconds}`;
-            setTimeout(updateClock, 1000); // Har bir soniyada yangilash
-        }
 
         function addDriver() {
             const driverName = document.getElementById("driver-name").value;
@@ -183,6 +174,12 @@
             const busyHours = document.getElementById("busy-hours").value;
 
             if (driverName && plateNumber && busyHours) {
+                // Takrorlanmas bort raqamiga tekshirish
+                if (drivers.some(driver => driver.plateNumber === plateNumber)) {
+                    alert("Bunday bort raqami allaqachon mavjud!");
+                    return;
+                }
+
                 const driver = {
                     name: driverName,
                     plateNumber: plateNumber,
@@ -192,80 +189,66 @@
                     remainingTime: `${busyHours} соат 0 минут 0 секунд`
                 };
 
-                // Bort raqami takrorlanmasligini tekshirish
-                if (drivers.some(d => d.plateNumber === plateNumber)) {
-                    alert("Бу борт рақами аввалдан киритилган!");
-                    return;
-                }
-
+                // Drayverni qo'shish
                 drivers.push(driver);
                 localStorage.setItem("drivers", JSON.stringify(drivers));
                 addDriverToTable(driver);
-                startCountdown(drivers.length - 1); // So'nggi qo'shilganni sanashni boshlash
+                startCountdown(drivers.length - 1);
             } else {
-                alert("Iltimos, barcha maydonlarni to'ldiring.");
+                alert("Barcha maydonlarni to'ldiring!");
             }
         }
 
         function addDriverToTable(driver) {
             const tableBody = document.querySelector("#driver-table tbody");
+
             const row = document.createElement("tr");
 
             row.innerHTML = `
                 <td>${driver.name}</td>
                 <td>${driver.plateNumber}</td>
-                <td><span class="status ${driver.status === "БАНД" ? 'busy' : 'available'}">${driver.status}</span></td>
-                <td>${driver.remainingTime}</td>
-                <td><button onclick="startCountdown(${drivers.indexOf(driver)})">Ишлатиш</button></td>
-                <td><button onclick="removeDriver(${drivers.indexOf(driver)})">Ўчириш</button></td>
+                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
+                <td class="remaining-time">${driver.remainingTime}</td>
+                <td><button onclick="deleteDriver(${drivers.length - 1})">ЎЧИРИШ</button></td>
             `;
 
             tableBody.appendChild(row);
         }
 
+        function deleteDriver(index) {
+            drivers.splice(index, 1);
+            localStorage.setItem("drivers", JSON.stringify(drivers));
+            location.reload();  // Barcha yozuvlarni yangilash
+        }
+
         function startCountdown(index) {
             const driver = drivers[index];
-            const remainingTime = driver.endTime - new Date().getTime();
+            const remainingTimeCell = document.querySelector(`#driver-table tbody tr:nth-child(${index + 1}) .remaining-time`);
 
-            if (remainingTime <= 0) {
-                driver.status = "БОШ"
-                driver.remainingTime = "0 соат 0 минут 0 секунд";
-                localStorage.setItem("drivers", JSON.stringify(drivers));
-                return;
-            }
-
-            let timeLeft = remainingTime;
             const interval = setInterval(() => {
-                timeLeft -= 1000;
-                const hours = Math.floor(timeLeft / (1000 * 60 * 60));
-                const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-
-                driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
-                document.querySelectorAll("#driver-table tbody tr")[index].children[3].textContent = driver.remainingTime;
+                const now = new Date().getTime();
+                const timeLeft = driver.endTime - now;
 
                 if (timeLeft <= 0) {
                     clearInterval(interval);
-                    driver.status = "БОШ";
-                    driver.remainingTime = "0 соат 0 минут 0 секунд";
-                    localStorage.setItem("drivers", JSON.stringify(drivers));
-                    document.querySelectorAll("#driver-table tbody tr")[index].children[2].textContent = "БОШ";
+                    remainingTimeCell.textContent = "Вақт тугади";
+                    const statusCell = document.querySelector(`#driver-table tbody tr:nth-child(${index + 1}) .status`);
+                    statusCell.textContent = "БОШ";
+                    statusCell.classList.remove("busy");
+                    statusCell.classList.add("available");
+                } else {
+                    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    remainingTimeCell.textContent = `${hours} соат ${minutes} минут ${seconds} секунд`;
                 }
             }, 1000);
-        }
-
-        function removeDriver(index) {
-            if (confirm("Ushbu yozuvni o'chirmoqchimisiz?")) {
-                drivers.splice(index, 1);
-                localStorage.setItem("drivers", JSON.stringify(drivers));
-                document.querySelector("#driver-table tbody").children[index].remove();
-            }
         }
 
         function resetAll() {
             localStorage.removeItem("drivers");
             drivers = [];
-            document.querySelector("#driver-table tbody").innerHTML = "";
+            location.reload();
         }
     </script>
 </body>
