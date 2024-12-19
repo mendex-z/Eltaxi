@@ -1,18 +1,16 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Taxi Management System</title>
     <style>
         body {
-            background-color: rgba(0, 0, 0, 0.1);
+            background-color: #f4f4f9;
             font-family: Arial, sans-serif;
             margin: 20px;
-            background-color: #f4f4f9;
         }
         .container {
-            background-color: rgba(0, 0, 0, 0.1);
             max-width: 800px;
             margin: auto;
             background: #fff;
@@ -35,19 +33,6 @@
         th {
             background-color: #f4f4f9;
         }
-        .status-button {
-            padding: 10px 15px;
-            border: none;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .available {
-            background-color: #007bff;
-        }
-        .busy {
-            background-color: #dc3545;
-        }
         .form-group {
             margin-bottom: 15px;
         }
@@ -55,7 +40,7 @@
             display: block;
             margin-bottom: 5px;
         }
-        input, select {
+        input {
             width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
@@ -78,30 +63,39 @@
         h3 {
             text-align: center;
         }
+        .status {
+            padding: 5px 10px;
+            border-radius: 5px;
+            color: white;
+        }
+        .available {
+            background-color: #28a745;
+        }
+        .busy {
+            background-color: #dc3545;
+        }
+        .reset-button {
+            background-color: #dc3545;
+            margin-top: 20px;
+        }
+        .reset-button:hover {
+            background-color: #c82333;
+        }
+        /* Logotip uchun o'zgartirish */
         .logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo img {
-            max-width: 150px; /* logotipning kattaligini sozlang */
-            height: auto;
-        }
-        .sbros-button {
-            background-color: #dc3545; /* Qizil rang */
-        }
-        .sbros-button:hover {
-            background-color: #c82333; /* Hover holatida o'zgartirish */
+            display: block;
+            margin: 0 auto;
+            width: 350px;  /* Logotip o'lchamini moslashtiring */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Logotipni qo'shish -->
-        <div class="logo">
-            <img src="https://github.com/sultan-ata/Eltaxi/blob/main/eltaksi.png?raw=true" alt="ElTaxi Logo">
-        </div>
+        <!-- Logotipni joylashtirish -->
+       <img src="https://raw.githubusercontent.com/sultan-ata/Eltaxi/main/eltaksi.png" alt="ЭлТакси Logotipi" class="logo">
 
-        <h3>сабаблилар дафтари:</h3>
+
+        <h3>Сабаблилар дафтари</h3>
 
         <div class="form-group">
             <label for="driver-name">ИСМ ШАРИФИ:</label>
@@ -114,103 +108,112 @@
         </div>
 
         <div class="form-group">
-            <label for="busy-hours">ВАҚТИ:</label>
+            <label for="busy-hours">ВАҚТИ (СОАТ):</label>
             <input type="number" id="busy-hours" placeholder="САБАБЛИ ВАҚТИ">
         </div>
 
-        <button onclick="addDriver()">Юкла</button>
-        <button class="sbros-button" onclick="clearInputs()">Сброс</button> <!-- Sbros tugmasi -->
+        <button onclick="addDriver()">Қўшиш</button>
+        <button class="reset-button" onclick="resetAll()">SBROS QILISH</button>
 
-        <table>
+        <table id="driver-table">
             <thead>
                 <tr>
-                    <th>ШАФЁРЛАР</th>
-                    <th>БОРТ</th>
-                    <th>ВАҚТИ</th>
-                    <th>СТАТУС</th>
+                    <th>ИСМ ШАРИФИ</th>
+                    <th>БОРТ РАҚАМИ</th>
+                    <th>ҲОЛАТИ</th>
+                    <th>ҚОЛГАН ВАҚТ</th>
                 </tr>
             </thead>
-            <tbody id="driver-table">
+            <tbody>
+                <!-- Yozuvlar shu yerga qo'shiladi -->
             </tbody>
         </table>
     </div>
 
     <script>
-        const drivers = JSON.parse(localStorage.getItem('drivers')) || [];
-        const table = document.getElementById('driver-table');
+        let drivers = JSON.parse(localStorage.getItem("drivers")) || [];
 
-        // Haydovchilarni mahalliy saqlashga saqlash
-        function saveDriversToStorage() {
-            localStorage.setItem('drivers', JSON.stringify(drivers));
+        window.onload = function () {
+            // Yozuvlarni yuklash
+            drivers.forEach((driver, index) => {
+                addDriverToTable(driver);
+                startCountdown(index);
+            });
+        };
+
+        function addDriver() {
+            const driverName = document.getElementById("driver-name").value;
+            const plateNumber = document.getElementById("plate-number").value;
+            const busyHours = document.getElementById("busy-hours").value;
+
+            if (driverName && plateNumber && busyHours) {
+                const driver = {
+                    name: driverName,
+                    plateNumber: plateNumber,
+                    busyHours: busyHours,
+                    endTime: new Date().getTime() + (parseInt(busyHours) * 60 * 60 * 1000),
+                    status: "БАНД",
+                    remainingTime: `${busyHours} соат 0 минут 0 секунд`
+                };
+                
+                drivers.push(driver);
+                localStorage.setItem("drivers", JSON.stringify(drivers));
+
+                addDriverToTable(driver);
+                startCountdown(drivers.length - 1);
+            } else {
+                alert("Илтимос, барча майдонларни тўлдиринг.");
+            }
         }
 
-        // Haydovchilarni jadvalga chiqarish
-        function renderTable() {
-            table.innerHTML = '';
-            drivers.forEach((driver) => {
-                const now = new Date();
-                const busyUntil = new Date(driver.timestamp);
-                busyUntil.setHours(busyUntil.getHours() + parseInt(driver.busyHours));
+        function addDriverToTable(driver) {
+            const table = document.querySelector("#driver-table tbody");
+            const row = document.createElement("tr");
 
-                const isExpired = now > busyUntil;
+            row.innerHTML = `
+                <td>${driver.name}</td>
+                <td>${driver.plateNumber}</td>
+                <td class="status ${driver.status === 'БАНД' ? 'busy' : 'available'}">${driver.status}</td>
+                <td>${driver.remainingTime}</td>
+            `;
+            table.appendChild(row);
+        }
 
-                const row = `<tr>
-                    <td>${driver.name}</td>
-                    <td>${driver.plateNumber}</td>
-                    <td>${driver.busyHours}</td>
-                    <td>
-                        <button class="status-button ${isExpired ? 'available' : 'busy'}">
-                            ${isExpired ? 'ИШДА' : 'БАНД'}
-                        </button>
-                    </td>
-                </tr>`;
-                table.innerHTML += row;
+        function startCountdown(index) {
+            const interval = setInterval(() => {
+                const now = new Date().getTime();
+                const driver = drivers[index];
+                const remainingTime = driver.endTime - now;
+
+                if (remainingTime <= 0) {
+                    clearInterval(interval);
+                    driver.status = "Мавжуд";
+                    driver.remainingTime = "0 соат 0 минут 0 секунд";
+                    updateTable();
+                } else {
+                    const hours = Math.floor((remainingTime / (1000 * 60 * 60)) % 24);
+                    const minutes = Math.floor((remainingTime / (1000 * 60)) % 60);
+                    const seconds = Math.floor((remainingTime / 1000) % 60);
+                    driver.remainingTime = `${hours} соат ${minutes} минут ${seconds} секунд`;
+                    updateTable();
+                }
+            }, 1000);
+        }
+
+        function updateTable() {
+            const table = document.querySelector("#driver-table tbody");
+            table.innerHTML = "";
+            drivers.forEach((driver, index) => {
+                addDriverToTable(driver);
+                startCountdown(index);
             });
         }
 
-        // Haydovchini qo'shish
-        function addDriver() {
-            const name = document.getElementById('driver-name').value.trim();
-            const plateNumber = document.getElementById('plate-number').value.trim();
-            const busyHours = document.getElementById('busy-hours').value.trim();
-
-            if (!name || !plateNumber || !busyHours) {
-                alert('Iltimos, barcha maydonlarni to\'ldiring!');
-                return;
-            }
-
-            // Bort raqami takrorlanmasligi uchun tekshirish
-            if (drivers.find(driver => driver.plateNumber === plateNumber)) {
-                alert('Bu bort raqami allaqachon ro\'yxatdan o\'tgan!');
-                return;
-            }
-
-            const driver = {
-                name,
-                plateNumber,
-                busyHours,
-                timestamp: new Date().toISOString(),
-            };
-
-            drivers.push(driver);
-            saveDriversToStorage();
-            renderTable();
-
-            // Input maydonlarini tozalash
-            document.getElementById('driver-name').value = '';
-            document.getElementById('plate-number').value = '';
-            document.getElementById('busy-hours').value = '';
+        function resetAll() {
+            localStorage.removeItem("drivers");
+            drivers = [];
+            updateTable();
         }
-
-        // Sbros funksiyasi - barcha input maydonlarini tozalash
-        function clearInputs() {
-            document.getElementById('driver-name').value = '';
-            document.getElementById('plate-number').value = '';
-            document.getElementById('busy-hours').value = '';
-        }
-
-        // Sahifa yuklanganda jadvalni chiqarish
-        renderTable();
     </script>
 </body>
 </html>
